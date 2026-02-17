@@ -6,7 +6,7 @@ Consistent Finance is a command-line (CLI) program designed to demonstrate how t
 
 ```mermaid
 flowchart LR
-    User[fa:fa-user Banker] --Command--> Program[Program 2PC Coordinator] ----> DB_1[fa:fa-database Account DB]
+    User[fa:fa-user Banker] --Command--> Program["Program (2PC Coordinator)"] ----> DB_1[fa:fa-database Account DB]
     Program ----> DB_2[fa:fa-database Ledger DB]
 
 ```
@@ -67,3 +67,154 @@ For every account, the sum of all ledger entries must equal the stored account b
 2. The presenter should be able to show the transactions and their internal state (PREPARE, COMMIT, ABORT) for demonstration purposes;
 3. The presenter should be able to run a recovery program after bringing the database instances back online and restore the database to a consistent state;
 4. The presenter should be able to verify the data consistency.
+
+## Architecture
+
+### Design Goals and Scope
+
+The system is designed to demonstrate how a Two-Phase Commit coordinator enforces atomicity and preserves the defined data consistency invariant across multiple PostgreSQL instances. The architecture prioritizes correctness, observability of transaction states, and deterministic recovery after crash-stop failures. High availability, performance optimization, sharding, and production-grade concurrency control are explicitly outside the scope of this project.
+
+### Two-Phase Commit Protocol Overview
+
+The following diagram describes a _Happy Path_ of a distributed transaction.
+```mermaid
+sequenceDiagram
+    actor U as User (CLI)
+    participant P as Program
+    participant A as Account DB
+    participant L as Ledger DB
+
+    U->>P: withdraw(account, amount)
+
+    P->>P: ALLOCATE TxID
+    
+    note over P,L: Begin
+    P->>A: BEGIN
+    P->>L: BEGIN
+
+    note over P,L: SQL execution
+    P->>A: UPDATE balance
+    P->>L: INSERT ledger entry
+
+    note over P,L: PREPARE (Phase 1)
+    P->>A: PREPARE TxID
+    A-->>P: (SUCCESS)
+    P->>L: PREPARE TxID
+    L-->>P: (SUCCESS)
+
+    note over P,L: COMMIT (Phase 2)
+    P->>A: COMMIT PREPARED TxID
+    P->>L: COMMIT PREPARED TxID
+
+```
+
+Before sending PREPARE or COMMIT decisions, the coordinator persists the corresponding state transition in its durable log to ensure recovery safety.
+
+### System Overview 
+
+```mermaid
+flowchart LR    
+    U[Banker] --run--> UI[UI <br/> User Interactions]
+
+    UI --invoke--> APP[Application Layer <br/> Business Logic]
+
+    APP --invoke--> DAL[Data Access Layer <br/> Database Operations <br/> Two-Phase Commit <br/> Two-Phase Coordinator <br/> Unit-of-Work]
+
+    DAL --Read/Write--> A[(Account DB)]
+    DAL --Read/Write--> L[(Ledger DB)]
+    DAL --Read/Write--> LOG[(Durable Log)]
+```
+
+- UI parses CLI commands and prints results.
+- Application layer implements use-cases (withdraw/deposit/query) and calls the persistence boundary.
+- Data Access layer provides a Unit-of-Work (TransactionManager) that coordinates repositories and runs 2PC to commit across both databases.
+- Durable log enables deterministic recovery via `  recovery.py`.
+
+### Components
+
+```mermaid
+flowchart LR
+
+    User["Banker"]
+
+    subgraph UI
+        direction LR
+        cli_get[get_account]
+        cli_deposit[deposit]
+        cli_withdraw[withdraw]
+        cli_check[check]
+        cli_recover[recover]
+    end
+
+    subgraph Application
+        direction LR
+        case_get_account[GetAccountUseCase]
+        case_withdraw[WithdrawUseCase]
+        case_deposit[DepositUseCase]
+        case_check[CheckUseCase]
+        case_recover[RecoverUseCase]
+    end
+
+    subgraph DataAccess
+        direction LR
+        TM[Transaction Manager <br/> 'Unit-of-Work'] 
+        TX[Transaction <br/> '2PC Coordinator']
+        AccountRepository
+        LedgerEntryRepository
+    end
+
+    subgraph Databases
+        direction LR
+        db_account[Account DB]
+        db_ledger[Ledger DB]
+    end
+
+    User --> UI --> Application --> DataAccess --> Databases
+```
+
+### Data Access Layer Design
+
+```mermaid
+flowchart LR
+    APP[Application Layer] --1. begin()--> TM[TransactionManager]
+    TM --2. returns--> TX[Transaction<br/>Distributed UoW + 2PC]
+
+    APP --3. accounts(), ledger()--> TX
+    TX --provides--> AR[AccountRepository]
+    TX --provides--> LR[LedgerEntryRepository]
+
+    APP --4. update--> AR
+    APP --4. update--> LR
+
+    APP --5. commit()--> TX
+    APP -. rollback() .-> TX
+```
+
+The application layer never coordinates participants directly. It operates on repositories within a Transaction scope and finalizes via commit() or rollback().
+
+### Domain Entities
+
+```mermaid
+classDiagram
+    direction LR
+
+    Account "1" <--  "0..*" LedgerEntry
+    LedgerEntry "0..*" --> "1" LedgerType
+
+    class Account {
+        int account_id
+        Decimal balance
+    }
+
+    class LedgerEntry {
+        int ledger_id
+        LedgerType type
+        Decimal amount
+    }
+
+    class LedgerType {
+        withdraw
+        deposit
+    }
+
+```
