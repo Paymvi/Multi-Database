@@ -1,0 +1,10 @@
+[project]
+name = "consistent-finance"
+version = "0.1.0"
+description = "Consistent Finance is a command-line (CLI) program designed to demonstrate how the Two-Phase Commit (2PC) protocol preserves data consistency across distributed database instances. The project also explores the advantages and limitations of 2PC in failure scenarios."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "psycopg[binary]>=3.3.3",
+    "python-dotenv>=1.2.1",
+]
