@@ -159,8 +159,11 @@ flowchart LR
         direction LR
         TM[Transaction Manager <br/> 'Unit-of-Work'] 
         TX[Transaction <br/> '2PC Coordinator']
+        TR[TransactionRecovery]
+        DL[DurableLogRepository]
         AccountRepository
         LedgerEntryRepository
+
     end
 
     subgraph Databases
@@ -182,6 +185,7 @@ flowchart LR
     APP --3. accounts(), ledger()--> TX
     TX --provides--> AR[AccountRepository]
     TX --provides--> LR[LedgerEntryRepository]
+    TX --uses--> DL[DurableLogRepository]
 
     APP --4. update--> AR
     APP --4. update--> LR

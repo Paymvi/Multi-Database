@@ -1,0 +1,39 @@
+services:
+  account_db:
+    image: postgres:16
+    container_name: account_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: finance
+      POSTGRES_PASSWORD: finance_pw
+      POSTGRES_DB: account_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - account_data:/var/lib/postgresql/data
+    command: >
+      postgres
+      -c max_prepared_transactions=100
+      -c shared_preload_libraries=''
+
+  ledger_db:
+    image: postgres:16
+    container_name: ledger_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: finance
+      POSTGRES_PASSWORD: finance_pw
+      POSTGRES_DB: ledger_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - ledger_data:/var/lib/postgresql/data
+    command: >
+      postgres
+      -c max_prepared_transactions=100
+      -c shared_preload_libraries=''
+
+volumes:
+  account_data:
+  ledger_data:
+
