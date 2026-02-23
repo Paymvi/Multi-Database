@@ -1,5 +1,5 @@
 from data_access.transaction_manager import TransactionManager
-from entity import Account, LedgerEntry
+from entity import Account, LedgerEntry, LedgerEntryType
 from decimal import Decimal
 
 
@@ -28,7 +28,7 @@ class DepositUseCase:
             entry = LedgerEntry(
                 id=0,  # placeholder; DB will generate the real id
                 account_id=account_id,
-                entry_type="deposit",
+                entry_type=LedgerEntryType.DEPOSIT, # Updated to not use hard coded string
                 amount=amount,
             )
 
