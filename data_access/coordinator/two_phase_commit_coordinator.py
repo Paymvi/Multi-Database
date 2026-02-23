@@ -88,6 +88,7 @@ class TwoPhaseCommitCoordinator:
             self._append_log(tx_id, 'ABORTED', {'reason': str(error)})
             raise
 
+    #Hardcoded participant list for now but we can make it dynamic later
     def _participants(self) -> list[tuple[str, Connection]]:
         return [
             ('account_db', self._db_provider.account_db),
