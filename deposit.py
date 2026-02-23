@@ -1,6 +1,7 @@
 import argparse
 from context import ApplicationContext
 from application.deposit_use_case import DepositUseCase
+from decimal import Decimal
 
 
 def main(account_id: int, amount: float):
@@ -25,4 +26,5 @@ if __name__ == "__main__":
     parser.add_argument("amount", type=float)
     args = parser.parse_args()
 
-    main(args.account_id, args.amount)
+    amount = Decimal(str(args.amount))
+    main(args.account_id, amount)
