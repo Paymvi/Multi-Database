@@ -4,13 +4,16 @@ import uuid
 from psycopg import Connection
 
 from data_access.database_connection_provider import DatabaseConnectionProvider
+from data_access.transaction_log_repo import TransactionLogRepository
+from entity.transaction_log_entry import TransactionLogEntry, TransactionStatus
 
 
 # Logs are not implemented yet
 class TwoPhaseCommitCoordinator:
 
-    def __init__(self, db_provider: DatabaseConnectionProvider):
+    def __init__(self, db_provider: DatabaseConnectionProvider , transaction_log_repo: TransactionLogRepository):
         self._db_provider = db_provider
+        self._transaction_log_repo = transaction_log_repo
 
     def rollback(self) -> None:
         '''Rolls back the transaction across both databases.'''
@@ -26,17 +29,20 @@ class TwoPhaseCommitCoordinator:
 
         try:
             # Phase 1: PREPARE
+            self._transaction_log_repo.write_log(TransactionLogEntry(tx_id = tx_id , status = TransactionStatus.PREPARING))
             for participant_name, participant_conn in participants:
                 with participant_conn.cursor() as cursor:
                     cursor.execute(f"PREPARE TRANSACTION '{tx_id}'")
                 prepared_participants.append((participant_name, participant_conn))
-
+            
+            self._transaction_log_repo.write_log(TransactionLogEntry(tx_id = tx_id , status = TransactionStatus.COMMITTING))
 
             # Phase 2: COMMIT PREPARED
             for participant_name, participant_conn in participants:
                 participant_conn.autocommit = True   # critical
                 with participant_conn.cursor() as cursor:
                     cursor.execute(f"COMMIT PREPARED '{tx_id}'")
+            self._transaction_log_repo.write_log(TransactionLogEntry(tx_id = tx_id , status = TransactionStatus.COMMITTED))
 
         except Exception as error:
             raise RuntimeError(f"Error handling the transaction: {error}")
