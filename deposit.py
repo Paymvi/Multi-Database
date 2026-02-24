@@ -9,7 +9,7 @@ def main(account_id: int, amount: Decimal):
 
     # Creates the application context (for the .env, database connections, and making transaction manager)
     ctx = ApplicationContext()
-    use_case = DepositUseCase(ctx.tx_manager)
+    use_case = ctx.deposit_use_case
 
     # Run deposit operation
     updated = use_case.deposit(account_id, amount)
