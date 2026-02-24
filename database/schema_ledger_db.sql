@@ -3,7 +3,7 @@ CREATE TABLE "ledger" (
     "account_id" INT NOT NULL,
     "type" VARCHAR(10) NOT NULL,
     "amount" DECIMAL(10, 2) NOT NULL,
-    "timestamp" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    "timestamp" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 INSERT INTO "ledger" (account_id, type, amount) VALUES 

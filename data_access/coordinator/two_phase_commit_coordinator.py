@@ -37,7 +37,6 @@ class TwoPhaseCommitCoordinator:
                 participant_conn.autocommit = True   # critical
                 with participant_conn.cursor() as cursor:
                     cursor.execute(f"COMMIT PREPARED '{tx_id}'")
-                participant_conn.autocommit = False  # optional: restore
 
         except Exception as error:
             raise RuntimeError(f"Error handling the transaction: {error}")
@@ -49,10 +48,6 @@ class TwoPhaseCommitCoordinator:
             ('ledger_db', self._db_provider.ledger_db),
         ]
 
-    @staticmethod
-    def _execute(conn: Connection, query: str, params: any | None = None) -> None:
-        with conn.cursor() as cursor:
-            cursor.execute(query, params)
 
     @staticmethod
     def _new_transaction_id() -> str:
