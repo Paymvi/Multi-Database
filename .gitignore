@@ -14,3 +14,4 @@ wheels/
 database.sqlite3
 .vscode/
 embedding/
+transaction_log.*
