@@ -1,16 +1,20 @@
 
 from data_access.account_repo import AccountRepository
+from data_access.coordinator.two_phase_commit_coordinator import TwoPhaseCommitCoordinator
 from data_access.database_connection_provider import DatabaseConnectionProvider
 from data_access.ledger_repo import LedgerRepository
+from data_access.transaction_log_repo import TransactionLogRepository
 
 
 class Transaction:
     '''Represents a database transaction.'''
 
-    def __init__(self, db_provider: DatabaseConnectionProvider):
+    def __init__(self, db_provider: DatabaseConnectionProvider , transaction_log_repo: TransactionLogRepository):
         self._db_provider = db_provider
         self._account_repo = AccountRepository(self._db_provider.account_db)
         self._ledger_repo = LedgerRepository(self._db_provider.ledger_db)
+        self._transaction_log_repo = transaction_log_repo
+        self._coordinator = TwoPhaseCommitCoordinator(self._db_provider, self._transaction_log_repo)
     
     ###########
     # Repository accessors
@@ -32,13 +36,11 @@ class Transaction:
 
     def commit(self) -> None:
         '''Commits the transaction.'''
-        # Implement the Two-Phase Commit protocol here to ensure atomicity across both databases
-        ...
+        self._coordinator.commit()
 
     def rollback(self) -> None:
         '''Rolls back the transaction.'''
-        # Implement rollback logic for both databases to ensure consistency in case of failure
-        ...
+        self._coordinator.rollback()
 
     ###########
     # Context manager methods for automatic transaction handling

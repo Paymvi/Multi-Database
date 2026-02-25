@@ -5,6 +5,7 @@ import dotenv
 from application.get_account_use_case import GetAccountUseCase
 from application.withdraw_use_case import WithdrawUseCase
 from data_access.database_connection_provider import DatabaseConnectionProvider
+from data_access.transaction_log_repo import TransactionLogRepository
 from data_access.transaction_manager import TransactionManager
 
 
@@ -21,8 +22,11 @@ class ApplicationContext:
             ledger_db_url=os.getenv('LEDGER_DB_URL')
         )
 
+        # Init Transaction Log Repo
+        self.transaction_log_repo = TransactionLogRepository()
+
         # The TransactionManager
-        self.tx_manager = TransactionManager(self.db_provider)
+        self.tx_manager = TransactionManager(self.db_provider, self.transaction_log_repo)
 
         # The use cases of the application layer
         self.get_account_use_case = GetAccountUseCase(self.tx_manager)
