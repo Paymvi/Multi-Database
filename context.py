@@ -7,6 +7,7 @@ from application.withdraw_use_case import WithdrawUseCase
 from data_access.database_connection_provider import DatabaseConnectionProvider
 from data_access.transaction_log_repo import TransactionLogRepository
 from data_access.transaction_manager import TransactionManager
+from application.deposit_use_case import DepositUseCase
 
 
 class ApplicationContext:
@@ -31,6 +32,7 @@ class ApplicationContext:
         # The use cases of the application layer
         self.get_account_use_case = GetAccountUseCase(self.tx_manager)
         self.withdraw_use_case = WithdrawUseCase(self.tx_manager)
+        self.deposit_use_case = DepositUseCase(self.tx_manager)
 
     def shutdown(self):
         """Clean up any resources if necessary."""
