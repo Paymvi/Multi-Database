@@ -4,7 +4,7 @@ from data_access.coordinator.two_phase_commit_coordinator import TwoPhaseCommitC
 from data_access.database_connection_provider import DatabaseConnectionProvider
 from data_access.ledger_repo import LedgerRepository
 from data_access.transaction_log_repo import TransactionLogRepository
-
+from data_access.check_repo import CheckRepository
 
 class Transaction:
     '''Represents a database transaction.'''
@@ -15,7 +15,8 @@ class Transaction:
         self._ledger_repo = LedgerRepository(self._db_provider.ledger_db)
         self._transaction_log_repo = transaction_log_repo
         self._coordinator = TwoPhaseCommitCoordinator(self._db_provider, self._transaction_log_repo)
-    
+        self._check_repo = CheckRepository(self._db_provider.account_db, self._db_provider.ledger_db)
+
     ###########
     # Repository accessors
     ###########
@@ -30,6 +31,11 @@ class Transaction:
         '''Provides access to the ledger repository within the transaction.'''
         return self._ledger_repo
 
+    @property
+    def check_repo(self) -> CheckRepository:
+        '''Provides access to the check repository within the transaction.'''
+        return self._check_repo
+    
     ########## 
     # Transactional operations
     ########## 

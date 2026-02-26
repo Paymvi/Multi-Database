@@ -10,6 +10,7 @@ from data_access.database_connection_provider import DatabaseConnectionProvider
 from data_access.transaction_log_repo import TransactionLogRepository
 from data_access.transaction_manager import TransactionManager
 from application.deposit_use_case import DepositUseCase
+from application.check_use_case import CheckUseCase
 
 
 class ApplicationContext:
@@ -39,6 +40,8 @@ class ApplicationContext:
         self.withdraw_use_case = WithdrawUseCase(self.tx_manager)
         self.deposit_use_case = DepositUseCase(self.tx_manager)
         self.recover_use_case = RecoverUseCase(self.recover_coordinator)
+        
+        self.check_use_case = CheckUseCase(self.tx_manager)
 
     def shutdown(self):
         """Clean up any resources if necessary."""

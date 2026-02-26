@@ -5,6 +5,7 @@ description = "Consistent Finance is a command-line (CLI) program designed to de
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "dotenv>=0.9.9",
     "psycopg[binary]>=3.3.3",
     "python-dotenv>=1.2.1",
 ]
